@@ -125,4 +125,3 @@ class Pipe:
         self.bottom = self.height + self.GAP
     #end of set_height function
 
-#asd
