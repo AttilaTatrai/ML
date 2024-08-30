@@ -42,7 +42,7 @@ BG_IMG = pygame.transform.scale2x(pygame.image.load(sBgPath))
 
 
 #creating bird class
-class Brid:
+class Bird:
     #set up parameters
     IMGS = BIRD_IMGS
     ANIMATION_TIME = 3 #delay between animations
@@ -125,5 +125,116 @@ class Pipe:
         self.bottom = self.height + self.GAP
     #end of set_height function
 
+    #move pipes on x axis
+    def move(self):
+        self.x -= self.VEL
+        #end of move funtcion
 
-#ide majd jön valami
+    #draw the 2 pipes
+    def draw(self,win):
+        win.blit(self.PIPE_TOP,(self.x, self.top))
+        win.blit(self.PIPE_BOTTOM,(self.x, self.bottom))
+    #end of draw function
+
+    #collosion detection
+    def collide(self, bird):
+        #get the mask of the objects to check
+        #a mask is a 1bit version of the givenobject
+        bird_mask = bird.get_mask()
+        top_mask = pygame.mask.from_surface(self.PIPE_TOP)
+        bottom_mask = pygame.mask.from_surface(self.PIPE_BOTTOM)
+
+        #check the distance between objects
+        top_offset = (self.x - bird.x, self.top - bird.y)
+        bottom_offset = (self.x - bird.x, self.bottom - bird.y)
+
+        #is there any overlapping between masks?
+        t_point = bird_mask.overlap(top_mask, top_offset)
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+
+        #if so, then birdy hits 1 of the pipes
+        if t_point or b_point:
+            return True
+        #otherwise collosion detected
+        return False
+    #end of function collide
+#end of class pipe
+
+#Base class
+class Base:
+    VEL =  7
+    WIDTH = BASE_IMG.get_width()
+    IMG = BASE_IMG
+
+    #setting up params
+    def __init__(self,y):
+        self.y = y
+        self.x1 = 0
+        self.x2 = self.WIDTH
+
+        #off the screen? shows up on the right
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH
+
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+    #end of move funciton
+
+    def draw(self, win):
+        win.blit(self.IMG, (self.x1, self.y))
+        win.blit(self.IMG, (self.x2, self.y))
+#end of class Base
+
+def draw_window(win, bird, pipes, base):
+    win.blit(BG_IMG, (0,0)) #background drawing
+
+    #draw all the pipes
+    for pipe in pipes:
+        pipe.draw(win)
+
+    #show score
+    pipe_passed = START_FONT.render("Score:  "+ str(score), 1,(255,255,255))
+    win.blit(pipe_passed,(5,5))
+
+    base.draw(win)#ground drawing
+    bird.draw(win) #bird drawing
+    pygame.display.update() #screen updtaing
+#end of draw_window function
+
+
+def run_game():
+    pygame.init() #setting up the game engine
+    pygame.display.set_caption("Super Birds 2024")
+
+    base = Base(730) #creating the ground object
+    bird = Bird(230,350) #creating bird object
+    pipes = [Pipe(700)] #create an array of the pipes
+
+    win = pygame.display.set_mode(screen_size) #create window to draw onto
+    clock = pygame.time.Clock() #clock handles FPS
+
+    run = True #game runs until it's true
+
+    Iwannasee = 0
+    while run:
+        clock.tick(30) #FPS is 30
+        Iwannasee +=1
+        if Iwannasee == 100:
+            run = False
+
+        #draw everything
+        draw_window(win, bird, pipes, base)
+
+
+    pygame.quit() #quit
+#end of main funciton
+
+
+#calling main
+if __name__ == "__main__":
+    run_game()
+
+
+
+
+
