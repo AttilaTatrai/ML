@@ -66,14 +66,14 @@ class Bird:
 
     #bird moving
     def move(self):
-        self.tick_count +=1
+        self.tick_count += 1
 
-        delta = self.vel * self.tick_count +1,5 * self.tick_count**2
+        delta = self.vel * self.tick_count + 1.5 * self.tick_count**2
 
         if delta >= 16:
             delta = 16
         if delta < 0:
-            delta -=2
+            delta -= 2
 
         #change position of the bird
         self.y = self.y + delta
@@ -128,12 +128,12 @@ class Pipe:
     #move pipes on x axis
     def move(self):
         self.x -= self.VEL
-        #end of move funtcion
+    #end of move funtcion
 
     #draw the 2 pipes
     def draw(self,win):
-        win.blit(self.PIPE_TOP,(self.x, self.top))
-        win.blit(self.PIPE_BOTTOM,(self.x, self.bottom))
+        win.blit(self.PIPE_TOP, (self.x, self.top))
+        win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
     #end of draw function
 
     #collosion detection
@@ -162,15 +162,18 @@ class Pipe:
 
 #Base class
 class Base:
-    VEL =  7
+    VEL = 7
     WIDTH = BASE_IMG.get_width()
     IMG = BASE_IMG
 
     #setting up params
-    def __init__(self,y):
+    def __init__(self, y):
         self.y = y
         self.x1 = 0
         self.x2 = self.WIDTH
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
 
         #off the screen? shows up on the right
         if self.x1 + self.WIDTH < 0:
@@ -193,14 +196,52 @@ def draw_window(win, bird, pipes, base):
         pipe.draw(win)
 
     #show score
-    pipe_passed = START_FONT.render("Score:  "+ str(score), 1,(255,255,255))
-    win.blit(pipe_passed,(5,5))
+    pipe_passed = START_FONT.render("Score:  "+ str(score), 1,(255, 255, 255))
+    win.blit(pipe_passed, (5, 5))
 
     base.draw(win)#ground drawing
     bird.draw(win) #bird drawing
     pygame.display.update() #screen updtaing
 #end of draw_window function
 
+
+def object_mover(win, bird, pipes, base):
+    trash = [] #pipe trash
+    global score
+
+    bird.move() #change pos of bird
+
+    #manage pipes
+    for pipe in pipes:
+        #check pipe- bird collosion
+        if pipe.collide(bird):
+            score -= 1
+            pass
+
+        #check if pipe left the window
+        if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+            trash.append(pipe)
+
+        #bird left the pipe sucessfully
+        if pipe.passed == False and pipe.x < bird.x:
+            pipe.passed = True
+            score += 1 #score increase
+            pipes.append(Pipe(WIN_WIDTH + 100)) #add another pipe
+
+        pipe.move() #change the position of pipes
+
+        #delete unseen pipes
+        for r in trash:
+            trash.remove(r)
+    #pipe management loop is over
+
+    #if leaves window extent -1 point
+    if bird.y + bird.img.get_height() >= 730:
+        score -= 1
+        pass
+
+    base.move() #change position of the ground
+#end of object mover function
 
 def run_game():
     pygame.init() #setting up the game engine
@@ -216,14 +257,19 @@ def run_game():
     run = True #game runs until it's true
 
     Iwannasee = 0
+    #this is the main game cycle
     while run:
         clock.tick(30) #FPS is 30
-        Iwannasee +=1
-        if Iwannasee == 100:
+        Iwannasee += 1
+        if Iwannasee == 200:
             run = False
+
+        #lets move all objects
+        object_mover(win, bird, pipes, base)
 
         #draw everything
         draw_window(win, bird, pipes, base)
+    #end of while loop
 
 
     pygame.quit() #quit
