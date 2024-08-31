@@ -188,7 +188,7 @@ class Base:
         win.blit(self.IMG, (self.x2, self.y))
 #end of class Base
 
-def draw_window(win, bird, pipes, base):
+def draw_window(win, birds, pipes, base):
     win.blit(BG_IMG, (0,0)) #background drawing
 
     #draw all the pipes
@@ -196,11 +196,21 @@ def draw_window(win, bird, pipes, base):
         pipe.draw(win)
 
     #show score
-    pipe_passed = START_FONT.render("Score:  "+ str(score), 1,(255, 255, 255))
+    pipe_passed = START_FONT.render("Score:  " + str(score), 1,(255, 255, 255))
     win.blit(pipe_passed, (5, 5))
 
+    #shot generation
+    generation_counter = START_FONT.render("Generation: " + str(generation),1,(255,255,255))
+    win.blit(generation_counter, (5, 45))
+    #show population
+    genom_counter = START_FONT.render("Population: "
+                                      + str(population)+"/"
+                                      + str(len(birds)),1,(255,255,255))
+    win.blit(genom_counter, (5, 90))
+
     base.draw(win)#ground drawing
-    bird.draw(win) #bird drawing
+    for bird in birds:
+        bird.draw(win) #bird drawing
     pygame.display.update() #screen updtaing
 #end of draw_window function
 
@@ -243,44 +253,86 @@ def object_mover(win, bird, pipes, base):
     base.move() #change position of the ground
 #end of object mover function
 
-def run_game():
+def run_game(genomes, config):
+
+    #this runs for every new gen
+    gen = []
+    nets = []
+    birds = []
+    global generation
+    global population
+
+    generation += 1
+    population = len(genomes)
+
+    #setup every genomes (g) here
+    #genome is a bird in the population
+    for ID, g in genomes:
+        #creating the neural network
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net) #nn's are colledted in this list
+        birds.append(Bird(random.randrange(100,230),350)) #collecting the birds in list
+        g.fitness = 0 # 0 exp
+        gen.append(g) #collecting genoms in a list
+    #genome setup is done
+
     pygame.init() #setting up the game engine
     pygame.display.set_caption("Super Birds 2024")
 
     base = Base(730) #creating the ground object
-    bird = Bird(230,350) #creating bird object
     pipes = [Pipe(700)] #create an array of the pipes
 
     win = pygame.display.set_mode(screen_size) #create window to draw onto
     clock = pygame.time.Clock() #clock handles FPS
 
     run = True #game runs until it's true
-
-    Iwannasee = 0
-    #this is the main game cycle
     while run:
         clock.tick(30) #FPS is 30
-        Iwannasee += 1
-        if Iwannasee == 200:
-            run = False
+
+        #check the events, like click
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: #exit pressed?
+                run = False #stop running
 
         #lets move all objects
         object_mover(win, bird, pipes, base)
 
         #draw everything
-        draw_window(win, bird, pipes, base)
+        draw_window(win, birds, pipes, base)
     #end of while loop
-
 
     pygame.quit() #quit
 #end of main funciton
 
+def run(config_path):
+
+    try:
+        #load the default parameters for neural networks
+        config = neat.config.Config(neat.DefaultGenome,
+                                    neat.DefaultReproduction,
+                                    neat.DefaultSpeciesSet,
+                                    neat.DefaultStagnation,
+                                    config_path)
+    except:
+        print("error check the files")
+        return
+
+    #create a starter pop
+    #pop consists of x birds (currently 100 by param file)
+    population = neat.Population(config)
+
+    #it excludes the main function for 50 times / 50 generations
+    population.run(run_game, 50)
+
+    #exit
+    pygame.quit() #exit the game engine
+    quit() #exit the program
+#end of run function
 
 #calling main
 if __name__ == "__main__":
-    run_game()
+    #AI config file
+    local_dir = os.path.dirname((__file__))
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
 
-
-
-
-
+    run(config_path)
