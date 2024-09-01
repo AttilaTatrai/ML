@@ -215,34 +215,49 @@ def draw_window(win, birds, pipes, base):
 #end of draw_window function
 
 
-def object_mover(win, bird, pipes, base):
+def object_mover(win, birds, pipes, base, gen, nets):
     trash = [] #pipe trash
     global score
 
-    bird.move() #change pos of bird
+    #we have to know wich pipe is in front of the birds
+    #so we can make dicision to jump or not
+    pipe_ind = 0
+    if len(birds) > 0:
+        if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
+            pipe_ind = 1
+        else:
+            return False
+
+    #check the birds
+    for count, bird in enumerate(birds):
+        bird.move() #change pos of birds(down) ai will make it jump
+        gen[count].fitness += 0.1 #increase a little bit the fitness
+
+        #AI will make decision knowing these data
+        data_to_evaluate = (bird.y,
+                            abs(bird.y - pipes[pipe_ind].height),
+                            abs(bird.y - pipes[pipe_ind].bottom))
+
+        #let's make a decision without human intervention
+        result = nets[count].activate(data_to_evaluate)
+
+        #result is between 0 and 1 (sigmoid activation function)
+        if result[0] > 0.5: #if pretty sure
+            bird.jump()
+    #bird cheker loop is over
 
     #manage pipes
     for pipe in pipes:
-        #check pipe- bird collosion
-        if pipe.collide(bird):
-            score -= 1
-            pass
+        pipe.move() #change the position of pipes
+
 
         #check if pipe left the window
         if pipe.x + pipe.PIPE_TOP.get_width() < 0:
             trash.append(pipe)
 
-        #bird left the pipe sucessfully
-        if pipe.passed == False and pipe.x < bird.x:
-            pipe.passed = True
-            score += 1 #score increase
-            pipes.append(Pipe(WIN_WIDTH + 100)) #add another pipe
-
-        pipe.move() #change the position of pipes
-
         #delete unseen pipes
-        for r in trash:
-            trash.remove(r)
+    for r in trash:
+        trash.remove(r)
     #pipe management loop is over
 
     #if leaves window extent -1 point
@@ -295,7 +310,9 @@ def run_game(genomes, config):
                 run = False #stop running
 
         #lets move all objects
-        object_mover(win, bird, pipes, base)
+        if object_mover(win, birds, pipes, base, gen, nets) == False:
+            run = False
+            break
 
         #draw everything
         draw_window(win, birds, pipes, base)
