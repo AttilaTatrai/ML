@@ -1,6 +1,6 @@
 import pygame
 import neat
-import time
+#import time
 import os
 import random
 
@@ -197,7 +197,7 @@ def draw_window(win, birds, pipes, base):
 
     #show score
     pipe_passed = START_FONT.render("Score:  " + str(score), 1,(255, 255, 255))
-    win.blit(pipe_passed, (5, 5))
+    win.blit(pipe_passed, (5, 4))
 
     #shot generation
     generation_counter = START_FONT.render("Generation: " + str(generation),1,(255,255,255))
@@ -211,6 +211,7 @@ def draw_window(win, birds, pipes, base):
     base.draw(win)#ground drawing
     for bird in birds:
         bird.draw(win) #bird drawing
+
     pygame.display.update() #screen updtaing
 #end of draw_window function
 
@@ -218,6 +219,7 @@ def draw_window(win, birds, pipes, base):
 def object_mover(win, birds, pipes, base, gen, nets):
     trash = [] #pipe trash
     global score
+    global FPS
 
     #we have to know wich pipe is in front of the birds
     #so we can make dicision to jump or not
@@ -225,8 +227,8 @@ def object_mover(win, birds, pipes, base, gen, nets):
     if len(birds) > 0:
         if len(pipes) > 1 and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width():
             pipe_ind = 1
-        else:
-            return False
+    else:
+        return False
 
     #check the birds
     for count, bird in enumerate(birds):
@@ -287,6 +289,9 @@ def object_mover(win, birds, pipes, base, gen, nets):
     #for loop is over
 
     base.move() #change position of the ground
+    #above 10 pipes make it faster
+    if score > 10 and FPS < 1000:
+        FPS += 1
 #end of object mover function
 
 def run_game(genomes, config):
@@ -323,7 +328,7 @@ def run_game(genomes, config):
 
     run = True #game runs until it's true
     while run:
-        clock.tick(30) #FPS is 30
+        clock.tick(FPS) #FPS is 30
 
         #check the events, like click
         for event in pygame.event.get():
@@ -343,7 +348,8 @@ def run_game(genomes, config):
     #end of while loop
 #end of main funciton
 
-def run(config_path):
+
+def run( config_path ):
 
     try:
         #load the default parameters for neural networks
@@ -367,6 +373,7 @@ def run(config_path):
     pygame.quit() #exit the game engine
     quit() #exit the program
 #end of run function
+
 
 #calling main
 if __name__ == "__main__":
