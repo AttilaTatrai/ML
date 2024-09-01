@@ -250,6 +250,23 @@ def object_mover(win, birds, pipes, base, gen, nets):
     for pipe in pipes:
         pipe.move() #change the position of pipes
 
+        #check pipe - bird collision
+        for count, bird in enumerate(birds):
+            if pipe.collide(bird):
+                gen[count].fitness -= 1 #decrease fitness
+                birds.remove(bird) #delete bird
+                nets.pop(count) #delete
+                gen.pop(count) #delete
+
+            #bird left the pipe sucessfuly
+            if pipe.passed == False and pipe.x < bird.x:
+                pipe.passed = True
+                score += 1 #increase score
+
+                for g in gen:
+                    g.fitness += 5 #increase fitness
+                pipes.append(Pipe(WIN_WIDTH+100)) #add another pipe
+    #end of bird and pipe loops
 
         #check if pipe left the window
         if pipe.x + pipe.PIPE_TOP.get_width() < 0:
@@ -257,13 +274,17 @@ def object_mover(win, birds, pipes, base, gen, nets):
 
         #delete unseen pipes
     for r in trash:
-        trash.remove(r)
+        pipes.remove(r)
     #pipe management loop is over
 
-    #if leaves window extent -1 point
-    if bird.y + bird.img.get_height() >= 730:
-        score -= 1
-        pass
+    #check if any of the birds hit the gound, or fly away
+    for count, bird in enumerate(birds):
+        if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
+            gen[count].fitness -= 1 #decrease fitness
+            birds.remove(bird)#delete bird
+            nets.pop(count) #delete the brain (nn)
+            gen.pop(count) #delete from generation
+    #for loop is over
 
     base.move() #change position of the ground
 #end of object mover function
@@ -308,6 +329,9 @@ def run_game(genomes, config):
         for event in pygame.event.get():
             if event.type == pygame.QUIT: #exit pressed?
                 run = False #stop running
+                pygame.quit() #close game engine
+                quit() #quit program
+                break
 
         #lets move all objects
         if object_mover(win, birds, pipes, base, gen, nets) == False:
@@ -317,8 +341,6 @@ def run_game(genomes, config):
         #draw everything
         draw_window(win, birds, pipes, base)
     #end of while loop
-
-    pygame.quit() #quit
 #end of main funciton
 
 def run(config_path):
